@@ -10,6 +10,7 @@ char checkForWinner(char[3][3]);
 // PLAYER
 void play(char[3][3], char);
 char chooseCharacter();
+int chooseGameMode();
 // COMPUTER
 void computerPlay(char[3][3], char);
 
@@ -17,25 +18,44 @@ typedef struct {
 	char character;
 } Player;
 
+enum GameMode {
+	SINGLEPLAYER,
+	MULTIPLAYER,
+};
+
 int main() {
 	srand(time(NULL));
 	char exampleBoard[3][3] = {{'1', '2', '3'}, {'4', '5', '6'}, {'7', '8', '9'}};
 	char board[3][3] = {{' ', ' ', ' '}, {' ', ' ', ' '}, {' ', ' ', ' '}};
-	Player player1, computer1;
+	Player player1, player2;
+	enum GameMode gameMode = chooseGameMode();
+
 	player1.character = chooseCharacter();
-	computer1.character = (player1.character == 'o') ? 'x' : 'o';
+	if (gameMode == MULTIPLAYER) {
+		player2.character = chooseCharacter();
+	} else {
+		player2.character = (player1.character == 'o') ? 'x' : 'o';
+	}
 
 	drawBoard(exampleBoard);
+	char winner;
 	while (checkBoard(board) != 0) {
 		play(board, player1.character);
-		computerPlay(board, computer1.character);
-		drawBoard(board);
-		char winner = checkForWinner(board);
+		winner = checkForWinner(board);
 		if (winner != ' ') {
-			printf("Congratulations!! \'%c\' won the game!!!", winner);
+			drawBoard(board);
 			break;
 		}
+		if (gameMode == SINGLEPLAYER) {
+			computerPlay(board, player2.character);
+		} else {
+			play(board, player2.character);
+		}
+		drawBoard(board);
+		winner = checkForWinner(board);
+		if (winner != ' ') { break; }
 	}
+	printf("Congratulations!! \'%c\' won the game!!!", winner);
 	
 	return 0;
 }
@@ -86,24 +106,37 @@ char checkForWinner(char board[3][3]) {
 void play(char board[3][3], char playerCharacter) {
 	short tile;
 	while (1) {
-		printf("Pick a tile to play: ");
+		printf("\'%c\' pick a tile to play: ", playerCharacter);
 		scanf("%d", &tile);
-		if(tile > 0 && tile < 10) {
-			break;
+		if(tile <= 0 || tile >= 10) {
+			printf("The number must be between 1 and 9!\n");
+			continue;
 		}
-		printf("\nThe number must be between 1 and 9!");
+		short row = ceil(tile/3)-1;
+		if(board[row][tile-(3*row)-1] != ' ') {
+			printf("The tile must be empty\n");
+			continue;
+		}
+		board[row][tile-(3*row)-1] = playerCharacter;
+		break;
 	}
-	// kinda extra work but easier to play when saying 1 to 9
-	short row = ceil(tile/3)-1;
-	board[row][tile-(3*row)-1] = playerCharacter;
 }
 
 char chooseCharacter() {
 	char character;
 	printf("What character do you want to play as: ");
-	scanf("%c", &character);
-	printf("Great choice! Let's play!\n");
+	scanf(" %c", &character);
 	return character;
+}
+
+int chooseGameMode() {
+	char type;
+	printf("Do you want to play against a computer [c] or against an another player [p]?: ");
+	scanf("%c", &type);
+	if (type == 'c') {
+		return SINGLEPLAYER;
+	}
+	return MULTIPLAYER;
 }
 
 // COMPUTER
