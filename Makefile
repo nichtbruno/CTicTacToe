@@ -1,10 +1,13 @@
 CC := gcc
 
-SRC := $(shell find . -name '*.c')
-HEADERS := $(shell find . -name '*.h')
-OBJ := $(SRC:.c=.o)
+SRC_DIR := .
+BUILD_DIR := build
 
-TARGET := main
+SRC := $(shell find $(SRC_DIR) -name '*.c')
+HEADERS := $(shell find $(SRC_DIR) -name '*.h')
+OBJ := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRC))
+
+TARGET := $(BUILD_DIR)/main
 
 CFLAGS := -std=c17 -Wall -lm
 
@@ -13,19 +16,24 @@ all: $(TARGET)
 
 -include $(OBJ:.o=.d)
 
-$(TARGET): $(OBJ)
+$(TARGET): $(OBJ) | $(BUILD_DIR)
 	$(CC) $(OBJ) $(CFLAGS) -o $(TARGET)
 
-%.d: %.c
-	$(CC) $(CFLAGS) -MM -MT $(@:.d=.o) $< > $@
-
-%.o: %.c
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
+	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-clean:
-	rm -f $(OBJ) $(TARGET) $(OBJ:.o=.d)
+$(BUILD_DIR)/%.d: $(SRC_DIR)/%.c | $(BUILD_DIR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -MM -MT $(@:.d=.o) $< > $@
 
-run:
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+
+clean:
+	rm -rf $(BUILD_DIR)
+
+run: $(TARGET)
 	./$(TARGET)
 
-.PHONY: all clean
+.PHONY: all clean run
